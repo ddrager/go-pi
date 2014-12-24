@@ -5,6 +5,7 @@ import (
   "os/signal"
   "time"
   "fmt"
+  "strconv"
   "github.com/ddrager/go-pi-blaster"
 
   "net/http"
@@ -86,6 +87,14 @@ func menu(c web.C, w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, "Hello, %s!", c.URLParams["name"])
 }
 
+func websetRGB(c web.C, w http.ResponseWriter, r *http.Request) {
+  //stopAndClear()
+  red, _ := strconv.ParseInt(c.URLParams["red"], 10, 64)
+  green, _ := strconv.ParseInt(c.URLParams["green"], 10, 64)
+  blue, _ := strconv.ParseInt(c.URLParams["blue"], 10, 64)
+  setRGB(red, green, blue)
+}
+
 func main() {
   fmt.Printf("Running\n")
 
@@ -105,6 +114,7 @@ func main() {
   goji.Get("/hello/:name", menu)
   goji.Get("/cycle", cycle)
   goji.Get("/clear", clear)
+  goji.Get("/setrgb/:red/:green/:blue", websetRGB)
   
 
   goji.Handle("/*", http.FileServer(http.Dir(staticFilesLocation)))
