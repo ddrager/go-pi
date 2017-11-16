@@ -7,7 +7,6 @@ import (
   "fmt"
   "strconv"
   "github.com/ddrager/go-pi-blaster"
-
   "net/http"
   "github.com/zenazn/goji"
   "github.com/zenazn/goji/web"
@@ -18,7 +17,7 @@ const (
   greenPin = 22
   bluePin = 24
 
-  jump = 17
+  jump = 5 // must be factor of 255
 
   staticFilesLocation = "/home/pi/gocode/src/github.com/ddrager/go-pi/static"
 )
@@ -30,13 +29,20 @@ var (
 )
 
 func setRGB(red int64, green int64, blue int64) {
-  b.Apply(redPin, float64(red)/255.0)  
+  b.Apply(redPin, float64(red)/255.0)
   b.Apply(greenPin, float64(green)/255.0)
   b.Apply(bluePin, float64(blue)/255.0)
 }
 
 // cycle colors
 func cycle(c web.C, w http.ResponseWriter, r *http.Request) {
+  stopAndClear()
+
+  delay, _ := strconv.ParseInt(c.URLParams["delay"], 10, 64)
+
+  if delay == 0 {
+    delay = 30;
+  }
 
   // set initial colors
   var red int64 = 255
@@ -45,9 +51,12 @@ func cycle(c web.C, w http.ResponseWriter, r *http.Request) {
 
   control = 1
 
+  fmt.Printf("Cycling with delay %d\n", delay)
+  fmt.Fprintf(w, "Cycling with a delay of %d milliseconds", delay)
+
   // main loop
   go func() {
-    timer := time.Tick(time.Millisecond * 30)
+    timer := time.Tick(time.Millisecond * time.Duration(delay))
     for _ = range timer {
       if red >= 255 && blue <= 0 && green < 255 {
         green = green + jump
@@ -59,16 +68,16 @@ func cycle(c web.C, w http.ResponseWriter, r *http.Request) {
         green = green - jump
       } else if green <= 0 && blue >= 255 && red < 255 {
         red = red + jump
-      } else if red >= 255 && green <= 0 && blue > 0 { 
+      } else if red >= 255 && green <= 0 && blue > 0 {
         blue = blue - jump
-      } 
+      }
       setRGB(red, green, blue)
 
       if control == 0 { break }
 
       //fmt.Printf("Red: %d, Green: %d, Blue: %d\n", red, green, blue)
-    }   
-  }() 
+    }
+  }()
 }
 
 func clear(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -109,13 +118,14 @@ func main() {
   signal.Notify(c, os.Interrupt)
 
   fmt.Printf("Launching web server...\n")
-  
+
   // web functionality
   goji.Get("/hello/:name", menu)
   goji.Get("/cycle", cycle)
+  goji.Get("/cycle/:delay", cycle)
   goji.Get("/clear", clear)
   goji.Get("/setrgb/:red/:green/:blue", websetRGB)
-  
+
 
   goji.Handle("/*", http.FileServer(http.Dir(staticFilesLocation)))
   goji.Serve()
