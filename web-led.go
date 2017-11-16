@@ -18,8 +18,6 @@ const (
   bluePin = 24
 
   jump = 5 // must be factor of 255
-
-  staticFilesLocation = "/home/pi/gocode/src/github.com/ddrager/go-pi/static"
 )
 
 var (
@@ -89,6 +87,7 @@ func stopAndClear() {
   control = 0
   // allow running processes to stop
   time.Sleep(100 * time.Millisecond)
+  setRGB(0, 0, 0)
   b.Reset();
 }
 
@@ -97,7 +96,7 @@ func menu(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func websetRGB(c web.C, w http.ResponseWriter, r *http.Request) {
-  //stopAndClear()
+  stopAndClear()
   red, _ := strconv.ParseInt(c.URLParams["red"], 10, 64)
   green, _ := strconv.ParseInt(c.URLParams["green"], 10, 64)
   blue, _ := strconv.ParseInt(c.URLParams["blue"], 10, 64)
@@ -105,7 +104,7 @@ func websetRGB(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-  fmt.Printf("Running\n")
+  fmt.Printf("Running web server\n")
 
   // set initial pins and start interface
   a := []int64{redPin, greenPin, bluePin}
@@ -117,7 +116,11 @@ func main() {
   c := make(chan os.Signal, 1)
   signal.Notify(c, os.Interrupt)
 
+  pwd, _ := os.Getwd()
+  staticFilesLocation := pwd + "/static"
+
   fmt.Printf("Launching web server...\n")
+  fmt.Printf("Loading static files from %s\n", staticFilesLocation)
 
   // web functionality
   goji.Get("/hello/:name", menu)
