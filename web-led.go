@@ -75,8 +75,34 @@ func cycle(c web.C, w http.ResponseWriter, r *http.Request) {
 
       //fmt.Printf("Red: %d, Green: %d, Blue: %d\n", red, green, blue)
     }
+    fmt.Printf("Cycle timer broken")
   }()
 }
+
+func christmas(c web.C, w http.ResponseWriter, r *http.Request) {
+
+  stopAndClear()
+
+  control = 1
+
+  fmt.Printf("Turning on Christmas mode\n")
+
+  delay := 4000
+
+  // main loop
+  go func() {
+    timer := time.Tick(time.Millisecond * time.Duration(delay))
+    for _ = range timer {
+      setRGB(255, 0, 0)
+      time.Sleep(time.Millisecond * time.Duration(delay/2))
+      setRGB(0, 255, 0)
+      if control == 0 { break }
+    }
+    fmt.Printf("Christmas timer broken")
+  }()
+}
+
+
 
 func clear(c web.C, w http.ResponseWriter, r *http.Request) {
   stopAndClear()
@@ -126,6 +152,7 @@ func main() {
   goji.Get("/hello/:name", menu)
   goji.Get("/cycle", cycle)
   goji.Get("/cycle/:delay", cycle)
+  goji.Get("/christmas", christmas)
   goji.Get("/clear", clear)
   goji.Get("/setrgb/:red/:green/:blue", websetRGB)
 
