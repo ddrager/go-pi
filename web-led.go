@@ -56,6 +56,8 @@ func cycle(c web.C, w http.ResponseWriter, r *http.Request) {
   go func() {
     timer := time.Tick(time.Millisecond * time.Duration(delay))
     for _ = range timer {
+      if control == 0 { break }
+
       if red >= 255 && blue <= 0 && green < 255 {
         green = green + jump
       } else if green >= 255 && blue <= 0 && red > 0 {
@@ -71,8 +73,6 @@ func cycle(c web.C, w http.ResponseWriter, r *http.Request) {
       }
       setRGB(red, green, blue)
 
-      if control == 0 { break }
-
       //fmt.Printf("Red: %d, Green: %d, Blue: %d\n", red, green, blue)
     }
     fmt.Printf("Cycle timer broken")
@@ -87,20 +87,91 @@ func christmas(c web.C, w http.ResponseWriter, r *http.Request) {
 
   fmt.Printf("Turning on Christmas mode\n")
 
-  delay := 4000
+  delay := 2000
+  color := 0 // current color
+
+  // set initial color - before timer starts
+  setRGB(0, 255, 0)
 
   // main loop
   go func() {
     timer := time.Tick(time.Millisecond * time.Duration(delay))
     for _ = range timer {
-      setRGB(255, 0, 0)
-      time.Sleep(time.Millisecond * time.Duration(delay/2))
-      setRGB(0, 255, 0)
+
       if control == 0 { break }
+
+      if color == 0 { 
+        setRGB(255, 0, 0); 
+        color = 1 
+      } else {
+        setRGB(0, 255, 0);
+        color = 0
+      }
+
     }
     fmt.Printf("Christmas timer broken")
   }()
 }
+
+// cycle colors
+func christmas_fade(c web.C, w http.ResponseWriter, r *http.Request) {
+  stopAndClear()
+
+  delay, _ := strconv.ParseInt(c.URLParams["delay"], 10, 64)
+
+  if delay == 0 {
+    delay = 30;
+  }
+
+  // set initial colors
+  var red int64 = 0
+  var green int64 = 0
+  var blue int64 = 0
+  var direction int64 = 0
+  var color int64 = 0
+
+  control = 1
+
+  fmt.Printf("Cycling with delay %d\n", delay)
+  fmt.Fprintf(w, "Cycling with a delay of %d milliseconds", delay)
+
+  // main loop
+  go func() {
+    timer := time.Tick(time.Millisecond * time.Duration(delay))
+    for _ = range timer {
+
+      if control == 0 { break }
+
+      // make the jump in color
+      if direction == 0 {
+        if color == 0 { 
+          red = red + jump
+        } else { green = green + jump }
+      } else if direction == 1 {
+        if color == 0 { 
+          red = red - jump 
+        } else { green = green - jump }
+      }
+      // set the lights
+      setRGB(red, green, blue)
+
+      // switch colors & direction if at bottom of range
+      if color == 0 && direction == 1 && red == 0 { color = 1; direction = 0;  
+      } else if color == 1 && direction == 1 && green == 0 { color = 0; direction = 0; }
+
+      // if at top of range, switch direction and keep color
+      if (red >= 255 || green >= 255) && direction == 0 {
+        direction = 1
+      }
+
+      if control == 0 { break }
+
+      // fmt.Printf("Red: %d, Green: %d, Blue: %d\n", red, green, blue)
+    }
+    fmt.Printf("Cycle timer broken")
+  }()
+}
+
 
 
 
@@ -153,6 +224,7 @@ func main() {
   goji.Get("/cycle", cycle)
   goji.Get("/cycle/:delay", cycle)
   goji.Get("/christmas", christmas)
+  goji.Get("/christmas_fade", christmas_fade)
   goji.Get("/clear", clear)
   goji.Get("/setrgb/:red/:green/:blue", websetRGB)
 

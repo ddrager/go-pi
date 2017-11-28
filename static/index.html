@@ -49,6 +49,7 @@
       <button type="button" class="btn btn-outline-primary pi-clear">Clear</button>
       <button type="button" class="btn btn-outline-primary pi-cycle">Cycle All Colors</button>
       <button type="button" class="btn btn-success pi-christmas">Christmas Lights</button>
+      <button type="button" class="btn btn-success pi-christmas-fade">Christmas Fade Lights</button>
     </div>
     <div class="col">
       <h3>Set A Color</h3>
@@ -84,6 +85,11 @@
     $('.pi-christmas').click(function() {
       $.get('/christmas');
     });
+
+    $('.pi-christmas-fade').click(function() {
+      $.get('/christmas_fade');
+    });
+
     </script>
 
     
